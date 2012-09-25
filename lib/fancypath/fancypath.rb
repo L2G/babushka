@@ -14,7 +14,14 @@ class Fancypath < Pathname
     alias :p :to_expanded_fancypath
 
     def to_tilde_expanded_path
-      sub(/^\~\/|^\~$/) {|_| Etc.getpwuid(Process.euid).dir.end_with('/') }
+      # This has to be cheated for Windows because Etc.getpwuid doesn't
+      # return anything meaningful.
+      home = if Etc.getpwuid(Process.euid).nil?
+        ENV['HOME'] || ENV['USERPROFILE']
+      else
+        Etc.getpwuid(Process.euid).dir
+      end
+      sub(/^\~\/|^\~$/) {|_| home.end_with('/') }
     end
   end
 
