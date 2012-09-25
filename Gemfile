@@ -9,6 +9,8 @@ group :test do
   gem 'fuubar'
   gem 'cloudservers'
   gem 'ir_b'
+  gem 'minitar'
+
   # for color test output in Windows
   if /mingw|mswin/ === Config::CONFIG['host_os']
     gem 'win32console'

@@ -1,4 +1,6 @@
 require 'spec_helper'
+require 'zlib'
+require 'archive/tar/minitar'
 
 def stub_commitless_repo name
   (tmp_prefix / 'repos' / name).rm
@@ -10,7 +12,9 @@ end
 def stub_repo name
   (tmp_prefix / 'repos' / "#{name}_remote").rm
   PathHelpers.cd tmp_prefix / 'repos' / "#{name}_remote", :create => true do
-    ShellHelpers.shell "tar -zxvf #{File.dirname(__FILE__) / '../repos/remote.git.tgz'}"
+    tarball = File.dirname(__FILE__) / '../repos/remote.git.tgz'
+    tgz = Zlib::GzipReader.new(File.open(tarball, 'rb'))
+    Minitar.unpack(tgz, '.')
   end
 
   (tmp_prefix / 'repos' / name).rm
