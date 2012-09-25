@@ -454,7 +454,11 @@ origin\t#{tmp_prefix / 'repos/a_remote/remote.git'} (push)
       end
     end
     after {
-      ShellHelpers.shell "rm -rf #{tmp_prefix / 'repos/b'}"
+      if Babushka.host.windows?
+        ShellHelpers.shell "rmdir /s /q \"#{tmp_prefix / 'repos/b'}\""
+      else
+        ShellHelpers.shell "rm -rf #{tmp_prefix / 'repos/b'}"
+      end
     }
   end
 end
