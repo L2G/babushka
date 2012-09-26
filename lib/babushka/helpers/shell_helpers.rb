@@ -104,7 +104,9 @@ module Babushka
     # commands that are only valid on an interactive shell, like rvm-related
     # commands.
     def login_shell cmd, opts = {}, &block
-      if shell('echo $SHELL').p.basename == 'zsh'
+      if host.windows?
+        shell "cmd /c \"#{cmd}\""
+      elsif shell('echo $SHELL').p.basename == 'zsh'
         shell "zsh -i -c '#{cmd}'", opts, &block
       else
         shell "bash -l -c '#{cmd}'", opts, &block
@@ -132,26 +134,30 @@ module Babushka
     #   shell('ls', :sudo => 'ben')
     #   shell('ls', :as => 'ben')
     def sudo *cmd, &block
-      opts = cmd.extract_options!
-      env = cmd.first.is_a?(Hash) ? cmd.shift : {}
-
-      if cmd.map(&:class) != [String]
-        raise ArgumentError, "#sudo commands have to be passed as a single string, not splatted strings or an array, since the `sudo` is composed from strings."
-      end
-
-      raw_as = opts[:as] || opts[:sudo] || 'root'
-      as = raw_as == true ? 'root' : raw_as
-      cmd = cmd.last
-
-      sudo_cmd = if current_username == as
-        cmd # Don't sudo if we're already running as the specified user.
-      elsif opts[:su] || cmd[' |'] || cmd[' >']
-        "sudo su - #{as} -c \"#{cmd.gsub('"', '\"')}\""
+      if host.windows?
+        raise NotImplementedError, "'sudo' is not implemented for Windows"
       else
-        "sudo -u #{as} #{cmd}"
-      end
+        opts = cmd.extract_options!
+        env = cmd.first.is_a?(Hash) ? cmd.shift : {}
 
-      shell [env, sudo_cmd], opts.discard(:as, :sudo, :su), &block
+        if cmd.map(&:class) != [String]
+          raise ArgumentError, "#sudo commands have to be passed as a single string, not splatted strings or an array, since the `sudo` is composed from strings."
+        end
+
+        raw_as = opts[:as] || opts[:sudo] || 'root'
+        as = raw_as == true ? 'root' : raw_as
+        cmd = cmd.last
+
+        sudo_cmd = if current_username == as
+          cmd # Don't sudo if we're already running as the specified user.
+        elsif opts[:su] || cmd[' |'] || cmd[' >']
+          "sudo su - #{as} -c \"#{cmd.gsub('"', '\"')}\""
+        else
+          "sudo -u #{as} #{cmd}"
+        end
+
+        shell [env, sudo_cmd], opts.discard(:as, :sudo, :su), &block
+      end
     end
 
     # This method returns the full path to the specified command in the PATH,
@@ -182,9 +188,17 @@ module Babushka
     # `which` and `type` vary across different platforms and shells. It's
     # also faster to not shell out.
     def cmd_dir cmd_name
-      ENV['PATH'].split(':').detect {|path|
-        File.executable? File.join(path, cmd_name.to_s)
-      }
+      if host.windows?
+        ENV['PATH'].split(';').detect {|path|
+          ENV['PATHEXT'].split(';').detect {|pathext|
+            File.executable?(File.join(path, cmd_name.to_s) + pathext)
+          }
+        }
+      else
+        ENV['PATH'].split(':').detect {|path|
+          File.executable? File.join(path, cmd_name.to_s)
+        }
+      end
     end
 
     # Run a shell command, logging before and after using #log_block, and using
