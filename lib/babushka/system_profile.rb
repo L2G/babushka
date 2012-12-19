@@ -19,9 +19,10 @@ module Babushka
       @_version_info ||= get_version_info
     end
 
-    def linux?; system == :linux end
-    def osx?;   system == :osx end
-    def bsd?;   system == :bsd end
+    def linux?;   system == :linux end
+    def osx?;     system == :osx end
+    def bsd?;     system == :bsd end
+    def windows?; system == :windows end
 
     def pkg_helper; UnknownPkgHelper end
     def pkg_helper_key; pkg_helper.try(:manager_key) end
@@ -184,5 +185,18 @@ module Babushka
     def pkg_helper; PacmanHelper end
     def flavour; :arch end
     def version; ''; end
+  end
+
+  class WindowsSystemProfile < SystemProfile
+    def system;      :windows   end
+    def system_str;  'Windows'  end
+    def library_ext; 'dll'      end
+
+    def cpu_type
+      result = (ENV['PROCESSOR_ARCHITECTURE'] || 'unknown').downcase
+      # These replacements are taken from PhusionPassenger::PlatformInfo.cpu_architectures
+      result.replace 'x86' if result[/^i.86$/]
+      result.replace 'x86_64' if result == 'amd64'
+    end
   end
 end

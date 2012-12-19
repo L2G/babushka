@@ -1,10 +1,18 @@
 module Babushka
   class SystemDetector
+    require 'rbconfig'
+
     def self.profile_for_host
-      (detect_using_uname || UnknownSystem).new
+      (detect_using_ruby_config || detect_using_uname || UnknownSystem).new
     end
 
     private
+
+    def self.detect_using_ruby_config
+      case RbConfig::CONFIG['target_os']
+      when /mingw|mswin/; WindowsSystemProfile
+      end
+    end
 
     def self.detect_using_uname
       case ShellHelpers.shell('uname -s')

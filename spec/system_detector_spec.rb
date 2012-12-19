@@ -66,5 +66,13 @@ describe Babushka::SystemDetector do
         end
       end
     end
+    context "on Windows boxes" do
+      it "should return WindowsSystemProfile" do
+        ['mingw32', 'mswin32'].each do |os|
+          stub_const("Config::CONFIG", Config::CONFIG.dup.merge({'target_os' => os}))
+          subject.should be_an_instance_of(Babushka::WindowsSystemProfile)
+        end
+      end
+    end
   end
 end
